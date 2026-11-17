@@ -1,0 +1,20 @@
+<div
+  id="rotate-notice"
+  class="fixed inset-0 z-50 hidden flex-col items-center justify-center bg-neutral-950/95 px-6 text-center backdrop-blur-md"
+>
+  <div class="mb-4 animate-bounce text-5xl">📱🔄</div>
+  <h2 class="text-xl font-semibold tracking-wide text-pink-300">
+    Putar Layar HP Kamu
+  </h2>
+  <p class="mt-2 max-w-xs text-sm text-neutral-300">
+    Ubah ke mode <strong>Landscape (Miring)</strong> untuk melihat animasi dan kejutan di dalamnya.
+  </p>
+</div>
+
+<style>
+  @media screen and (max-width: 920px) and (orientation: portrait) {
+    #rotate-notice {
+      display: flex;
+    }
+  }
+</style>
