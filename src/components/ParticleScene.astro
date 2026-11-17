@@ -1,0 +1,247 @@
+<canvas id="bg-canvas" class="fixed inset-0 -z-10 h-full w-full block"></canvas>
+
+<script>
+  import * as THREE from 'three';
+
+  const canvas = document.getElementById('bg-canvas') as HTMLCanvasElement;
+
+  // 1. Setup Scene, Camera, & Renderer
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050208, 0.035);
+
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+  );
+  camera.position.set(0, 1.2, 13);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: 'high-performance',
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Batasi pixelRatio agar ringan di HP
+  renderer.setClearColor(0x050208, 1);
+
+  // 2. Buat Tekstur Partikel Bercahaya (Glowing Dot)
+  function createGlowTexture(): THREE.CanvasTexture {
+    const size = 64;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext('2d')!;
+
+    const gradient = ctx.createRadialGradient(
+      size / 2,
+      size / 2,
+      0,
+      size / 2,
+      size / 2,
+      size / 2
+    );
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.25, 'rgba(255, 182, 217, 0.9)');
+    gradient.addColorStop(0.6, 'rgba(255, 77, 148, 0.35)');
+    gradient.addColorStop(1, 'rgba(255, 77, 148, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  const glowTexture = createGlowTexture();
+
+  // 3. Buat Formasi Partikel Hati (Glittering Pink Heart)
+  function createHeartParticles(count: number) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    const colorPalette = [
+      new THREE.Color(0xff4d94), // Pink cerah
+      new THREE.Color(0xff99c8), // Pastel pink
+      new THREE.Color(0xffffff), // Kilau putih
+      new THREE.Color(0xf43f5e), // Rose
+    ];
+
+    for (let i = 0; i < count; i++) {
+      // Rumus parametrik bentuk hati
+      const t = Math.random() * Math.PI * 2;
+      // Sebaran dari tepi ke dalam hati agar terlihat penuh namun tetap berdimensi
+      const fill = Math.pow(Math.random(), 0.45);
+
+      const xRaw = 16 * Math.pow(Math.sin(t), 3);
+      const yRaw =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
+
+      const scale = 0.14 * fill;
+      const zSpread = (Math.random() - 0.5) * 1.4 * (1 - fill * 0.5);
+
+      positions[i * 3] = xRaw * scale;
+      positions[i * 3 + 1] = yRaw * scale + 2.4; // Posisikan di bagian atas
+      positions[i * 3 + 2] = zSpread;
+
+      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 0.22,
+      map: glowTexture,
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    return new THREE.Points(geometry, material);
+  }
+
+  // 4. Buat Pusaran Partikel Spiral di Bawah (Swirling Spiral Galaxy)
+  function createSpiralParticles(count: number) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    const arms = 4; // Jumlah lengan spiral
+    const innerRadius = 1.1; // Lubang hitam di tengah spiral
+    const maxRadius = 8.5;
+
+    const colorInner = new THREE.Color(0xffb3d9);
+    const colorOuter = new THREE.Color(0xd946ef);
+
+    for (let i = 0; i < count; i++) {
+      const radius = innerRadius + Math.random() * (maxRadius - innerRadius);
+      const armAngle = ((i % arms) / arms) * Math.PI * 2;
+      const spinAngle = radius * 0.85;
+
+      const randomOffset = (Math.random() - 0.5) * (0.35 + radius * 0.08);
+      const angle = armAngle + spinAngle + randomOffset;
+
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      // Sedikit lengkungan vertikal & kemiringan perspektif
+      const y = (Math.random() - 0.5) * 0.35 - 2.6;
+
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      const mixedColor = colorInner.clone().lerp(colorOuter, (radius - innerRadius) / maxRadius);
+      colors[i * 3] = mixedColor.r;
+      colors[i * 3 + 1] = mixedColor.g;
+      colors[i * 3 + 2] = mixedColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 0.24,
+      map: glowTexture,
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const spiral = new THREE.Points(geometry, material);
+    // Miringkan spiral sedikit agar terlihat seperti piringan 3D di bawah hati
+    spiral.rotation.x = 0.28;
+    return spiral;
+  }
+
+  // 5. Buat Debu Bintang Latar Belakang (Ambient Sparkles)
+  function createAmbientDust(count: number) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 28;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 18;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 18 - 3;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 0.14,
+      color: 0xffc2e2,
+      map: glowTexture,
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    return new THREE.Points(geometry, material);
+  }
+
+  const heartParticles = createHeartParticles(2200);
+  const spiralParticles = createSpiralParticles(3000);
+  const ambientDust = createAmbientDust(400);
+
+  scene.add(heartParticles);
+  scene.add(spiralParticles);
+  scene.add(ambientDust);
+
+  // 6. Interaksi Sentuhan / Mouse Parallax Ringan
+  let targetX = 0;
+  let targetY = 0;
+
+  window.addEventListener('pointermove', (e) => {
+    const nx = (e.clientX / window.innerWidth) * 2 - 1;
+    const ny = (e.clientY / window.innerHeight) * 2 - 1;
+    targetX = nx * 0.8;
+    targetY = -ny * 0.5;
+  });
+
+  // 7. Responsif saat Resize / Rotate HP ke Landscape
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  });
+
+  // 8. Animation Loop
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const elapsed = clock.getElapsedTime();
+
+    // Animasi detak halus & goyangan pada bentuk hati
+    const beat = 1 + Math.sin(elapsed * 3.2) * 0.045;
+    heartParticles.scale.set(beat, beat, beat);
+    heartParticles.rotation.y = Math.sin(elapsed * 0.8) * 0.22;
+
+    // Rotasi pusaran spiral di bagian bawah
+    spiralParticles.rotation.y = elapsed * 0.45;
+
+    // Gerakan melayang debu bintang
+    ambientDust.rotation.y = elapsed * 0.04;
+
+    // Smooth camera parallax
+    camera.position.x += (targetX - camera.position.x) * 0.05;
+    camera.position.y += (1.2 + targetY - camera.position.y) * 0.05;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>

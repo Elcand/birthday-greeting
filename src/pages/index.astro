@@ -1,37 +1,17 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import OrientationOverlay from "../components/OrientationOverlay.astro";
-import { birthdayConfig } from "../data/birthdayConfig";
+import BaseLayout from '../layouts/BaseLayout.astro';
+import OrientationOverlay from '../components/OrientationOverlay.astro';
+import ParticleScene from '../components/ParticleScene.astro';
 ---
 
-<BaseLayout title={`Happy Birthday ${birthdayConfig.recipientName} ✨`}>
-  <!-- Overlay instruksi putar HP jika diakses mode portrait -->
+<BaseLayout title="Happy Birthday ✨">
   <OrientationOverlay />
+  <ParticleScene />
 
-  <!-- Layar Awal (Trigger untuk izin Audio Browser & Mulai Animasi) -->
-  <main
-    id="start-screen"
-    class="relative flex h-full w-full flex-col items-center justify-center bg-neutral-950 p-6 text-center"
-  >
-    <p class="mb-2 text-xs tracking-widest text-pink-400/80 uppercase">
-      {birthdayConfig.dateText}
+  <!-- Area UI sementara di atas canvas -->
+  <main class="relative z-10 flex h-full w-full flex-col items-center justify-center pointer-events-none">
+    <p class="mt-24 text-sm tracking-[0.25em] text-pink-200/80 uppercase animate-pulse">
+      Loading Magic...
     </p>
-    <h1 class="mb-6 text-2xl font-bold text-white md:text-4xl">
-      Untuk {birthdayConfig.recipientName} ✨
-    </h1>
-
-    <button
-      id="btn-start"
-      class="cursor-pointer rounded-full bg-pink-500 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 transition hover:scale-105 hover:bg-pink-400 active:scale-95"
-    >
-      Buka Kejutan 💖
-    </button>
   </main>
 </BaseLayout>
-
-<script>
-  const btnStart = document.getElementById("btn-start");
-  btnStart?.addEventListener("click", () => {
-    alert("Siap masuk ke scene partikel & musik!");
-  });
-</script>
